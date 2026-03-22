@@ -6,6 +6,7 @@
 import { formatTime, computeEnd, Constants } from './utils.js';
 import { stateManager } from './state.js';
 import { uiManager } from './ui.js';
+import { dragAndRenderManager } from './dragAndRender.js';
 
 export class SubtitleManager {
   /**
@@ -141,6 +142,7 @@ export class SubtitleManager {
 
     uiManager.setButtonDisabled(uiManager.exportBtn, stateManager.subtitles.length === 0);
     uiManager.setButtonDisabled(uiManager.undoBtn, stateManager.undoStack.length === 0);
+    dragAndRenderManager.renderSubtitleBlocks();
   }
 
   /**
@@ -184,6 +186,7 @@ export class SubtitleManager {
   reset() {
     stateManager.resetSubtitles();
     uiManager.clearSrtTable();
+    dragAndRenderManager.renderSubtitleBlocks();
     uiManager.setStatus('字幕已重置', 'ok');
   }
 }

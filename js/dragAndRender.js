@@ -126,7 +126,7 @@ export class DragAndRenderManager {
       const end = computeEnd(seg, idx, stateManager.subtitles, stateManager.mediaDuration);
       const left = seg.start * pxPerSec;
       const baseDuration = Math.max(end - seg.start, 0.05);
-      const width = Math.max(baseDuration * pxPerSec, 30);
+      const width = baseDuration * pxPerSec;
 
       uiManager.addSubtitleBlock(
         idx,

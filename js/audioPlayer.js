@@ -6,6 +6,7 @@
 import { formatTime } from './utils.js';
 import { stateManager } from './state.js';
 import { uiManager } from './ui.js';
+import { dragAndRenderManager } from './dragAndRender.js';
 
 export class AudioPlayer {
   /**
@@ -191,6 +192,7 @@ export class AudioPlayer {
     uiManager.setZoomValue(safePxPerSec);
     
     this.syncTrackWidth();
+    dragAndRenderManager.renderSubtitleBlocks();
     this.updateScrollControls();
   }
 
