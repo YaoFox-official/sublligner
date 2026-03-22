@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SRT Builder</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎬</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=upload" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --accent: #38bdf8;
+      --accent-2: #f8fafc;
+      --muted: #94a3b8;
+      --success: #34d399;
+      --danger: #f87171;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 35%),
+                  radial-gradient(circle at 80% 0%, rgba(52, 211, 153, 0.12), transparent 40%),
+                  var(--bg);
+      color: var(--accent-2);
+      font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+    h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
+    p { margin: 0.25rem 0 1rem; color: var(--muted); }
+    .page { max-width: 1100px; margin: 0 auto; padding: 32px 20px 48px; }
+    .card {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 16px 18px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+    .stack { display: grid; gap: 14px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    label { color: var(--muted); font-size: 0.9rem; }
+    input[type="file"], button, textarea, select {
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--accent-2);
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    input[type="file"] { display: none; }
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .upload-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .upload-btn .material-symbols-rounded {
+      font-size: 24px;
+    }
+    button {
+      background: linear-gradient(135deg, #38bdf8, #22c55e);
+      color: #0b1021;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.08s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      box-shadow: 0 10px 30px rgba(34, 197, 94, 0.35);
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(56, 189, 248, 0.35); }
+    textarea { width: 100%; min-height: 160px; resize: vertical; }
+    .lane { position: relative; border-radius: 10px; overflow: hidden; background: #0b1224; border: 1px solid rgba(255,255,255,0.06); width: 100%; min-width: 0; }
+    #laneViewport { position: relative; width: 100%; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
+    #subtitleTrack { height: 46px; border-bottom: 1px solid rgba(255,255,255,0.06); position: relative; overflow: visible; }
+    #subtitleTrackInner { position: relative; height: 100%; overflow: visible; will-change: width; }
+    .sub-block { position: absolute; top: 6px; height: 34px; border-radius: 4px; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.6); color: #e2f3ff; font-size: 0.9rem; user-select: none; cursor: grab; box-sizing: border-box; display: flex; align-items: center; padding: 0; overflow: hidden; white-space: nowrap; min-width: 30px; }\n    .sub-block:active { cursor: grabbing; }\n    .sub-block:hover { background: rgba(56, 189, 248, 0.3); }\n    .sub-block-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; padding: 0 6px; min-width: 0; }\n    .sub-block-handle { cursor: ew-resize; pointer-events: auto; }\n    .sub-block-handle:hover { background: rgba(56, 189, 248, 0.8) !important; box-shadow: 0 0 4px rgba(56, 189, 248, 0.6); }\n    .sub-block-handle.left { border-radius: 4px 0 0 4px; }\n    .sub-block-handle.right { border-radius: 0 4px 4px 0; }
+    #waveframe { position: relative; height: 150px; overflow: hidden; width: 100%; min-width: 0; }
+    #waveform { position: absolute; inset: 0; height: 150px; overflow: hidden; }
+    .scroll-controls { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: var(--muted); }
+    .scroll-controls input[type="range"] { flex: 1; }
+    .meter { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.9rem; }
+    .pill { padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: var(--accent-2); font-weight: 600; font-family: 'Courier Prime', monospace; font-variant-numeric: tabular-nums; font-size: 1.1rem; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    th { text-align: left; color: var(--muted); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.02em; }
+    td { font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+    td:nth-child(1), td:nth-child(2), td:nth-child(3) { font-family: 'Courier Prime', monospace; min-width: 100px; }
+    th:nth-child(1) { min-width: 60px; }
+    th:nth-child(2), th:nth-child(3) { min-width: 100px; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+    .text-cell { max-width: 620px; }
+    .status { color: var(--muted); font-size: 0.9rem; min-height: 18px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
+    .muted { color: var(--muted); }
+    .flex-1 { flex: 1; }
+    .toggle-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .toggle-switch input[type="checkbox"] {
+      display: none;
+    }
+    .toggle-switch label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .toggle-slider {
+      width: 36px;
+      height: 20px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+      position: relative;
+      transition: background 0.3s;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: var(--accent-2);
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: left 0.3s;
+    }
+    .toggle-switch input[type="checkbox"]:checked + label .toggle-slider {
+      background: var(--success);
+    }
+    .toggle-switch input[type="checkbox"]:checked + label .toggle-slider::before {
+      left: 18px;
+    }
+    .right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+    
+    /* 自定義倍速選擇框樣式 */
+    #rate {
+      background: linear-gradient(135deg, #1e3a5f, #2d5a8c);
+      color: #e0f2fe;
+      border: 2px solid rgba(56, 189, 248, 0.4);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    #rate:hover {
+      border-color: rgba(56, 189, 248, 0.8);
+      background: linear-gradient(135deg, #1f4d78, #2d6ba8);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+    }
+    
+    #rate:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: linear-gradient(135deg, #2561a0, #3578c5);
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+    }
+    
+    /* 選項樣式 */
+    #rate option {
+      background: #1e3a5f;
+      color: #e0f2fe;
+      padding: 8px;
+    }
+    
+    @media (max-width: 768px) {
+      .row { flex-direction: column; align-items: flex-start; }
+      .right { margin-left: 0; width: 100%; justify-content: flex-start; }
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="stack">
+      <div class="card">
+        <h1>SRT Builder</h1>
+        <p>載入影片或音訊，播放時按 <strong>T</strong> 將文字依序送到字幕軌，最後匯出 SRT。</p>
+        <div class="row">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <label class="upload-btn" for="mediaInput" title="載入影片/音訊">
+              <span class="material-symbols-rounded">upload</span>
+            </label>
+            <span style="font-size: 0.75rem; color: var(--muted);">影片/音訊</span>
+          </div>
+          <input id="mediaInput" type="file" accept="audio/*,video/*" />
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <label class="upload-btn" for="textInput" title="載入 TXT">
+              <span class="material-symbols-rounded">upload</span>
+            </label>
+            <span style="font-size: 0.75rem; color: var(--muted);">文字檔</span>
+          </div>
+          <input id="textInput" type="file" accept="text/plain" />
+          <button id="exportBtn" disabled>匯出 SRT</button>
+          <button id="undoBtn" disabled title="撤銷上一步 (Ctrl+Z)">↶ 撤銷</button>
+          <span class="badge">按 T 插入當前台詞</span>
+        </div>
+        <div class="row">
+          <div class="meter">
+            <button id="playPause" disabled>開始</button>
+            <button id="rewind" disabled>↺ 開頭</button>
+            <button id="reverse" disabled>倒放</button>
+            <span class="pill" id="timeLabel">00:00:00.00/00:00:00.00</span>
+            <label for="zoom">縮放</label>
+            <input id="zoom" type="range" min="1" max="400" value="1" />
+            <button id="fitZoom" disabled>最佳適配</button>
+            <label for="rate">倍速</label>
+            <select id="rate">
+              <option value="1">1.0x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2.0x</option>
+              <option value="2.5">2.5x</option>
+              <option value="3">3.0x</option>
+            </select>
+            <div class="toggle-switch">
+              <input type="checkbox" id="autoCenterToggle" checked>
+              <label for="autoCenterToggle" title="播放時自動將播放頭置中">
+                <div class="toggle-slider"></div>
+                <span> 播放頭置中</span>
+              </label>
+            </div>
+          </div>
+          <div class="right">
+            <span class="muted" id="fileName">尚未載入媒體</span>
+          </div>
+        </div>
+        <div class="lane" id="lane">
+          <div id="laneViewport">
+            <div id="subtitleTrack">
+              <div id="subtitleTrackInner"></div>
+            </div>
+            <div id="waveframe">
+              <div id="waveform"></div>
+            </div>
+          </div>
+        </div>
+        <div class="scroll-controls">
+          <button id="scrollLeft" disabled>◀</button>
+          <input id="scrollPos" type="range" min="0" max="100" value="0" />
+          <button id="scrollRight" disabled>▶</button>
+          <button id="resetSrt">重置字幕</button>
+        </div>
+        <div class="status" id="status"></div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="align-items: flex-start; gap: 14px;">
+          <div class="flex-1">
+            <label for="scriptBox">台詞文字（換行分段，空行表示與前後不連續）</label>
+            <textarea id="scriptBox" placeholder="每行一段字幕，空行表示這裡有間隔。\n播放時按 T 即可把下一行送到 SRT。"></textarea>
+          </div>
+          <div class="row" style="align-items: flex-start; gap: 10px;">
+            <button id="resetQueue">重建佇列</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin: 0 0 10px;">SRT 時間軸</h3>
+        <table>
+          <thead>
+            <tr><th>#</th><th>開始</th><th>結束</th><th class="text-cell">文字</th></tr>
+          </thead>
+          <tbody id="srtTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/wavesurfer.js@7"></script>
+  <script>
+    const mediaInput = document.getElementById('mediaInput');
+    const textInput = document.getElementById('textInput');
+    const scriptBox = document.getElementById('scriptBox');
+    const playPause = document.getElementById('playPause');
+    const rewindBtn = document.getElementById('rewind');
+    const reverseBtn = document.getElementById('reverse');
+    const zoomSlider = document.getElementById('zoom');
+    const fitZoomBtn = document.getElementById('fitZoom');
+    const rateSelect = document.getElementById('rate');
+    const laneViewport = document.getElementById('laneViewport');
+    const scrollLeftBtn = document.getElementById('scrollLeft');
+    const scrollRightBtn = document.getElementById('scrollRight');
+    const scrollPos = document.getElementById('scrollPos');
+    const resetSrtBtn = document.getElementById('resetSrt');
+    const timeLabel = document.getElementById('timeLabel');
+    const statusEl = document.getElementById('status');
+    const fileNameEl = document.getElementById('fileName');
+    const exportBtn = document.getElementById('exportBtn');
+    const undoBtn = document.getElementById('undoBtn');
+    const srtTable = document.getElementById('srtTable');
+    const resetQueueBtn = document.getElementById('resetQueue');
+    const autoCenterToggle = document.getElementById('autoCenterToggle');
+    const lane = document.getElementById('lane');
+    const subtitleTrackInner = document.getElementById('subtitleTrackInner');
+    const waveframe = document.getElementById('waveframe');
+
+    const DEFAULT_DURATION = 2.5; // seconds when no contiguous end is known
+
+    let wave = null;
+    let scriptQueue = [];
+    let queueIndex = 0;
+    let breakPending = false;
+    let subtitles = [];
+    let undoStack = [];
+    let mediaDuration = 0;
+    let originalBuffer = null;
+    let reversedBuffer = null;
+    let isReversed = false;
+    let playbackRate = 1;
+    let currentPxPerSec = 1;
+    let autoCenterPlayhead = true;
+    const SCROLL_STEP_FACTOR = 0.25; // fraction of viewport per click
+    let dragState = null; // { type: 'handle'|'block', side: 'left'|'right'|null, segIdx, startX, startScrollLeft, segStart, segEnd }
+    
+    // 撤銷系統
+    const saveUndo = () => {
+      undoStack.push(JSON.parse(JSON.stringify(subtitles)));
+      if (undoStack.length > 50) undoStack.shift(); // 限制 50 步
+    };
+    
+    const undo = () => {
+      if (undoStack.length === 0) {
+        setStatus('沒有可撤銷的操作', 'warn');
+        return;
+      }
+      subtitles = undoStack.pop();
+      undoBtn.disabled = undoStack.length === 0;
+      exportBtn.disabled = subtitles.length === 0;
+      refreshTable();
+      setStatus('已撤銷', 'ok');
+    };
+    
+    const createDragHandlers = () => {
+      const onMouseDown = (e, segIdx, dragType, side = null) => {
+        if (!wave) return;
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const seg = subtitles[segIdx];
+        const segEnd = computeEnd(seg, segIdx);
+        
+        dragState = {
+          type: dragType,
+          side,
+          segIdx,
+          startX: e.clientX,
+          startScrollLeft: laneViewport.scrollLeft,
+          segStart: seg.start,
+          segEnd: segEnd
+        };
+        
+        // 設置拖拽時的游標樣式
+        if (dragType === 'handle') {
+          document.body.style.cursor = side === 'left' ? 'w-resize' : 'e-resize';
+        } else {
+          document.body.style.cursor = 'grabbing';
+        }
+        
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      };
+      
+      const onMouseMove = (e) => {
+        if (!dragState) return;
+        const pxPerSec = getPxPerSec();
+        if (pxPerSec <= 0) return;
+        
+        const dx = (e.clientX - dragState.startX);
+        const dt = dx / pxPerSec;
+        
+        const seg = subtitles[dragState.segIdx];
+        
+        if (dragState.type === 'handle') {
+          // 調整邊界時間
+          if (dragState.side === 'left') {
+            seg.start = Math.max(0, Math.min(dragState.segStart + dt, dragState.segEnd - 0.001));
+          } else {
+            seg.end = Math.max(dragState.segStart + 0.001, dragState.segEnd + dt);
+          }
+        } else {
+          // 移動整個字幕
+          const newStart = Math.max(0, dragState.segStart + dt);
+          const duration = dragState.segEnd - dragState.segStart;
+          seg.start = newStart;
+          seg.end = newStart + duration;
+        }
+        
+        renderSubtitleBlocks();
+        refreshTable();
+      };
+      
+      const onMouseUp = () => {
+        if (dragState) {
+          saveUndo();
+        }
+        document.body.style.cursor = ''; // 恢復默認游標
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        dragState = null;
+      };
+      
+      return { onMouseDown, onMouseMove, onMouseUp };
+    };
+    
+    const dragHandlers = createDragHandlers();
+
+    const syncWaveScroll = (left) => {
+      const wrapper = wave?.drawer?.wrapper;
+      if (wrapper) wrapper.scrollLeft = left;
+    };
+
+    const formatTime = (t, forSrt = false) => {
+      const clamped = Math.max(0, t || 0);
+      const hours = Math.floor(clamped / 3600);
+      const minutes = Math.floor((clamped % 3600) / 60);
+      const seconds = Math.floor(clamped % 60);
+      const cs = Math.round((clamped - Math.floor(clamped)) * 100);
+      const pad = (n, len = 2) => String(n).padStart(len, '0');
+      const base = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+      return forSrt ? `${base},${pad(cs, 2)}` : `${base}.${pad(cs, 2)}`;
+    };
+
+    const setStatus = (msg, tone = 'muted') => {
+      statusEl.textContent = msg;
+      statusEl.style.color = tone === 'warn' ? 'var(--danger)' : tone === 'ok' ? 'var(--success)' : 'var(--muted)';
+    };
+
+    const resetSubtitles = () => {
+      subtitles = [];
+      undoStack = [];
+      srtTable.innerHTML = '';
+      renderSubtitleBlocks();
+      exportBtn.disabled = true;
+      undoBtn.disabled = true;
+      setStatus('字幕已重置', 'ok');
+    };
+
+
+
+    const updateScrollControls = () => {
+      const maxScroll = Math.max(0, laneViewport.scrollWidth - laneViewport.clientWidth);
+      const atStart = laneViewport.scrollLeft <= 1;
+      const atEnd = laneViewport.scrollLeft >= maxScroll - 1;
+      scrollLeftBtn.disabled = maxScroll === 0 || atStart;
+      scrollRightBtn.disabled = maxScroll === 0 || atEnd;
+      scrollPos.disabled = maxScroll === 0;
+      scrollPos.value = maxScroll === 0 ? 0 : Math.round((laneViewport.scrollLeft / maxScroll) * 100);
+      syncWaveScroll(laneViewport.scrollLeft);
+    };
+
+    const getPxPerSec = () => {
+      if (!wave || !mediaDuration) return 1;
+      const byParam = wave.params?.minPxPerSec || 0;
+      const byWidth = wave.drawer?.width ? wave.drawer.width / mediaDuration : 0;
+      return Math.max(1, currentPxPerSec || byParam || byWidth || 1);
+    };
+
+    const syncTrackWidth = () => {
+      if (!wave || !mediaDuration) return;
+      const pxPerSec = getPxPerSec();
+      // 確保最小寬度至少是視口寬度，以適應缩放時的顯示
+      const width = Math.max(mediaDuration * pxPerSec, laneViewport.clientWidth);
+      subtitleTrackInner.style.width = `${width}px`;
+      if (waveframe) waveframe.style.width = `${width}px`;
+      const wrapper = wave?.drawer?.wrapper;
+      if (wrapper) {
+        wrapper.style.width = `${width}px`;
+        wrapper.style.height = '150px';
+      }
+      updateScrollControls();
+    };
+
+    const applyZoom = (pxPerSec) => {
+      if (!wave || !mediaDuration) return;
+      const safePxPerSec = Math.max(1, pxPerSec);
+      currentPxPerSec = safePxPerSec;
+      wave.zoom(safePxPerSec);
+      zoomSlider.value = Math.min(Number(zoomSlider.max), Math.max(Number(zoomSlider.min), Math.round(safePxPerSec)));
+      syncTrackWidth();
+      renderSubtitleBlocks();
+      updateScrollControls();
+    };
+
+    const bestFitZoom = () => {
+      if (!wave || !mediaDuration || mediaDuration <= 0) return;
+      const viewport = Math.max(1, laneViewport.clientWidth || 1);
+      const pxPerSec = Math.max(1, viewport / mediaDuration);
+      applyZoom(pxPerSec);
+      laneViewport.scrollLeft = 0;
+      syncWaveScroll(0);
+      updateScrollControls();
+    };
+
+    const buildWave = () => {
+      wave = WaveSurfer.create({
+        container: '#waveform',
+        backend: 'WebAudio',
+        waveColor: '#38bdf8',
+        progressColor: '#22c55e',
+        height: 150,
+        normalize: true,
+        barWidth: 0, // continuous waveform
+        fillParent: false, // grow canvas; let lane scroll handle overflow
+        autoScroll: false,
+        autoCenter: false,
+        partialRender: true,
+      });
+
+      wave.on('error', (e) => {
+        setStatus(`Wave error: ${e}`, 'warn');
+      });
+
+      wave.on('ready', () => {
+        const dur = wave.getDuration();
+        const backend = wave.backend;
+        mediaDuration = dur;
+        originalBuffer = backend && backend.buffer ? backend.buffer : null;
+        reversedBuffer = null;
+        isReversed = false;
+        currentPxPerSec = getPxPerSec();
+        const wrapper = wave?.drawer?.wrapper;
+        if (wrapper) {
+          wrapper.style.position = 'absolute';
+          wrapper.style.left = '0';
+          wrapper.style.top = '0';
+        }
+        timeLabel.textContent = `${formatTime(0)}/${formatTime(mediaDuration)}`;
+        playPause.disabled = false;
+        rewindBtn.disabled = false;
+        reverseBtn.disabled = !originalBuffer; // reverse 需 buffer
+        fitZoomBtn.disabled = false;
+        exportBtn.disabled = subtitles.length === 0;
+        setStatus(originalBuffer ? '媒體已就緒，開始播放後按 T 插入字幕' : '媒體已就緒（若需倒放請改用較小檔案或重新載入）');
+        bestFitZoom();
+        syncTrackWidth();
+        renderSubtitleBlocks();
+        updateScrollControls();
+      });
+
+      wave.on('audioprocess', () => {
+        const t = wave.getCurrentTime();
+        timeLabel.textContent = `${formatTime(t)}/${formatTime(mediaDuration)}`;
+        
+        if (autoCenterPlayhead && wave.isPlaying()) {
+          const pxPerSec = getPxPerSec();
+          const playheadPx = t * pxPerSec;
+          const viewportWidth = laneViewport.clientWidth;
+          const centerPos = playheadPx - viewportWidth / 2;
+          const maxScroll = Math.max(0, laneViewport.scrollWidth - viewportWidth);
+          const targetScroll = Math.max(0, Math.min(centerPos, maxScroll));
+          laneViewport.scrollLeft = targetScroll;
+          syncWaveScroll(targetScroll);
+          updateScrollControls();
+        }
+      });
+
+      wave.on('finish', () => {
+        playPause.textContent = '開始';
+      });
+    };
+
+    const parseScript = (raw) => {
+      const lines = raw.split(/\r?\n/);
+      const queue = [];
+      lines.forEach((ln) => {
+        const trimmed = ln.trim();
+        if (!trimmed) {
+          queue.push({ isBreak: true });
+        } else {
+          queue.push({ text: trimmed, isBreak: false });
+        }
+      });
+      return queue;
+    };
+
+    const rebuildQueue = () => {
+      scriptQueue = parseScript(scriptBox.value);
+      queueIndex = 0;
+      breakPending = false;
+      setStatus(`台詞佇列已重建，共 ${scriptQueue.filter(x => !x.isBreak).length} 段`);
+    };
+
+    const computeEnd = (seg, idx) => {
+      const duration = mediaDuration || (subtitles[subtitles.length - 1]?.start + DEFAULT_DURATION);
+      const nextStart = subtitles[idx + 1]?.start;
+      let end = seg.end;
+      if (end == null || end <= seg.start) {
+        if (!seg.discontinuous && nextStart != null) {
+          end = nextStart;
+        } else {
+          end = Math.min(duration, seg.start + DEFAULT_DURATION);
+        }
+      }
+      return Math.max(end, seg.start + 0.001);
+    };
+
+    const renderSubtitleBlocks = () => {
+      if (!wave || subtitles.length === 0) {
+        subtitleTrackInner.innerHTML = '';
+        return;
+      }
+      const pxPerSec = getPxPerSec();
+      if (!pxPerSec) return;
+      subtitleTrackInner.innerHTML = '';
+      subtitles.forEach((seg, idx) => {
+        const end = computeEnd(seg, idx);
+        const left = seg.start * pxPerSec;
+        // 動態計算最小寬度：根據縮放級別調整，避免過小或過大
+        const baseDuration = Math.max(end - seg.start, 0.05); // 至少保留 0.05 秒的寬度
+        const width = Math.max(baseDuration * pxPerSec, 30); // 最小 30px，而不是 60px
+        const block = document.createElement('div');
+        block.className = 'sub-block';
+        block.style.left = `${left}px`;
+        block.style.width = `${width}px`;
+        block.setAttribute('data-seg-idx', idx);
+        block.onmousedown = (e) => {
+          if (e.target.classList.contains('sub-block-handle')) return;
+          dragHandlers.onMouseDown(e, idx, 'block');
+        };
+        
+        const leftHandle = document.createElement('div');
+        leftHandle.className = 'sub-block-handle left';
+        leftHandle.setAttribute('data-side', 'left');
+        leftHandle.style.cssText = 'width: 6px; min-width: 6px; height: 34px; background: rgba(56, 189, 248, 0.4); display: block; flex-shrink: 0; transition: all 0.2s;';
+        leftHandle.onmousedown = (e) => dragHandlers.onMouseDown(e, idx, 'handle', 'left');
+        
+        const textSpan = document.createElement('span');
+        textSpan.className = 'sub-block-text';
+        textSpan.textContent = seg.text;
+        
+        const rightHandle = document.createElement('div');
+        rightHandle.className = 'sub-block-handle right';
+        rightHandle.setAttribute('data-side', 'right');
+        rightHandle.style.cssText = 'width: 6px; min-width: 6px; height: 34px; background: rgba(56, 189, 248, 0.4); display: block; flex-shrink: 0; transition: all 0.2s;';
+        rightHandle.onmousedown = (e) => dragHandlers.onMouseDown(e, idx, 'handle', 'right');
+        
+        block.appendChild(leftHandle);
+        block.appendChild(textSpan);
+        block.appendChild(rightHandle);
+        subtitleTrackInner.appendChild(block);
+      });
+    };
+
+    const refreshTable = () => {
+      srtTable.innerHTML = '';
+      subtitles.forEach((seg, idx) => {
+        const tr = document.createElement('tr');
+        const id = document.createElement('td');
+        id.textContent = idx + 1;
+        const start = document.createElement('td');
+        start.textContent = seg.start != null ? formatTime(seg.start, true) : '—';
+        const end = document.createElement('td');
+        end.textContent = seg.end != null ? formatTime(seg.end, true) : formatTime(computeEnd(seg, idx), true);
+        const text = document.createElement('td');
+        text.className = 'text-cell';
+        text.contentEditable = 'true';
+        text.textContent = seg.text;
+        text.addEventListener('blur', () => {
+          const newText = text.textContent.trim();
+          if (newText !== seg.text) {
+            saveUndo();
+            seg.text = newText;
+            renderSubtitleBlocks();
+          }
+        });
+        tr.append(id, start, end, text);
+        srtTable.appendChild(tr);
+      });
+      exportBtn.disabled = subtitles.length === 0;
+      undoBtn.disabled = undoStack.length === 0;
+      renderSubtitleBlocks();
+    };
+
+    const insertSubtitle = () => {
+      if (!wave) return;
+      if (queueIndex >= scriptQueue.length) {
+        setStatus('佇列已用完', 'warn');
+        return;
+      }
+
+      const currentItem = scriptQueue[queueIndex];
+      
+      // 遇到空行時，結束當前字幕塊並等待下次插入訊號
+      if (currentItem.isBreak) {
+        // 結束前一個字幕塊
+        if (subtitles.length > 0) {
+          const lastSub = subtitles[subtitles.length - 1];
+          if (lastSub.end == null || lastSub.end <= lastSub.start) {
+            saveUndo();
+            lastSub.end = wave.getCurrentTime();
+            lastSub.discontinuous = true;
+            refreshTable();
+            setStatus(`字幕塊已結束（不連續間隔） @ ${formatTime(wave.getCurrentTime())}`, 'ok');
+          }
+        }
+        // 跳過空行佇列項並設置標記
+        queueIndex += 1;
+        breakPending = true;
+        
+        // 跳過可能的多個連續空行
+        while (queueIndex < scriptQueue.length && scriptQueue[queueIndex].isBreak) {
+          queueIndex += 1;
+        }
+        
+        if (queueIndex >= scriptQueue.length) {
+          setStatus('已到佇列末尾，等待新台詞', 'warn');
+          return;
+        }
+        setStatus('空行已處理，按下一次 T 開始新段字幕', 'ok');
+        return;
+      }
+
+      // 正常插入非空行字幕
+      saveUndo();
+      const now = wave.getCurrentTime();
+      const entry = scriptQueue[queueIndex];
+      const segment = { start: now, end: null, text: entry.text, discontinuous: breakPending };
+
+      if (subtitles.length > 0 && !breakPending) {
+        const prev = subtitles[subtitles.length - 1];
+        prev.end = Math.max(prev.start, now - 0.001);
+      }
+      subtitles.push(segment);
+      breakPending = false;
+      queueIndex += 1;
+      refreshTable();
+      setStatus(`插入："${entry.text}" @ ${formatTime(now)}`, 'ok');
+      syncTrackWidth();
+      updateScrollControls();
+    };
+
+    const exportSrt = () => {
+      const lines = [];
+      const duration = mediaDuration || (subtitles[subtitles.length - 1]?.start + DEFAULT_DURATION);
+
+      subtitles.forEach((seg, i) => {
+        const nextStart = subtitles[i + 1]?.start;
+        let end = seg.end;
+        if (end == null || end <= seg.start) {
+          if (!seg.discontinuous && nextStart) {
+            end = nextStart;
+          } else {
+            end = Math.min(duration, seg.start + DEFAULT_DURATION);
+          }
+        }
+        seg.end = end;
+        lines.push(`${i + 1}`);
+        lines.push(`${formatTime(seg.start, true)} --> ${formatTime(end, true)}`);
+        lines.push(seg.text);
+        lines.push('');
+      });
+
+      const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'subtitles.srt';
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus('已匯出 SRT');
+    };
+
+    const loadMediaFile = (file) => {
+      if (typeof WaveSurfer === 'undefined') {
+        setStatus('WaveSurfer 載入失敗，請檢查網路或 CDN', 'warn');
+        return;
+      }
+      if (!wave) buildWave();
+      const doLoad = () => {
+        setStatus('載入媒體中…');
+        try {
+          if (typeof wave.loadBlob === 'function') {
+            wave.loadBlob(file);
+          } else {
+            const url = URL.createObjectURL(file);
+            wave.load(url);
+          }
+        } catch (err) {
+          const url = URL.createObjectURL(file);
+          wave.load(url);
+        }
+      };
+      doLoad();
+      // Pre-enable core controls in case ready event is delayed; they will stay enabled after ready
+      playPause.disabled = false;
+      rewindBtn.disabled = false;
+      reverseBtn.disabled = false;
+      fitZoomBtn.disabled = false;
+      originalBuffer = null;
+      reversedBuffer = null;
+      isReversed = false;
+      wave.setPlaybackRate(playbackRate, true);
+      fileNameEl.textContent = file.name;
+      playPause.textContent = '開始';
+    };
+
+    const loadTextFile = (file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        scriptBox.value = reader.result;
+        rebuildQueue();
+      };
+      reader.readAsText(file, 'utf-8');
+      setStatus(`載入文字檔：${file.name}`);
+    };
+
+    // Event wiring
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        insertSubtitle();
+      }
+    });
+
+    playPause.addEventListener('click', () => {
+      if (!wave) return;
+      wave.playPause();
+      playPause.textContent = wave.isPlaying() ? '停止' : '開始';
+    });
+
+    rewindBtn.addEventListener('click', () => {
+      if (!wave) return;
+      wave.pause();
+      wave.seekTo(0);
+      playPause.textContent = '開始';
+      laneViewport.scrollLeft = 0;
+      updateScrollControls();
+    });
+
+    const ensureReversedBuffer = () => {
+      if (reversedBuffer || !originalBuffer || !wave?.backend?.ac) return reversedBuffer;
+      const src = originalBuffer;
+      const ac = wave.backend.ac;
+      const rev = ac.createBuffer(src.numberOfChannels, src.length, src.sampleRate);
+      for (let ch = 0; ch < src.numberOfChannels; ch += 1) {
+        const srcData = src.getChannelData(ch);
+        const dstData = rev.getChannelData(ch);
+        for (let i = 0, len = src.length; i < len; i += 1) {
+          dstData[i] = srcData[len - i - 1];
+        }
+      }
+      reversedBuffer = rev;
+      return reversedBuffer;
+    };
+
+    const toggleReverse = () => {
+      if (!wave || !originalBuffer) return;
+      const currentTime = wave.getCurrentTime();
+      const forwardDuration = mediaDuration || wave.getDuration();
+      const targetBuffer = isReversed ? originalBuffer : ensureReversedBuffer();
+      const newTime = isReversed ? currentTime : Math.max(0, forwardDuration - currentTime);
+      isReversed = !isReversed;
+      wave.pause();
+      wave.empty();
+      const onReady = () => {
+        mediaDuration = wave.getDuration();
+        syncTrackWidth();
+        renderSubtitleBlocks();
+        updateScrollControls();
+        const seekRatio = mediaDuration ? Math.min(1, newTime / mediaDuration) : 0;
+        wave.seekTo(seekRatio);
+        wave.setPlaybackRate(playbackRate, true);
+        playPause.textContent = '停止';
+        wave.play();
+        setStatus(isReversed ? '倒放中' : '正放中');
+        wave.un('ready', onReady);
+      };
+      wave.on('ready', onReady);
+      wave.loadDecodedBuffer(targetBuffer);
+    };
+
+    reverseBtn.addEventListener('click', toggleReverse);
+
+    zoomSlider.addEventListener('input', (e) => {
+      if (!wave) return;
+      const pxPerSec = Math.max(1, Number(e.target.value));
+      // 保存当前播放头位置（以秒为单位）
+      const currentTime = wave.getCurrentTime() || 0;
+      applyZoom(pxPerSec);
+      // 計算播放頭在新縮放級別下的像素位置
+      const playheadPx = currentTime * pxPerSec;
+      // 計算滾動位置使播放頭置中
+      const viewportWidth = laneViewport.clientWidth;
+      const centerPos = playheadPx - viewportWidth / 2;
+      const maxScroll = Math.max(0, laneViewport.scrollWidth - viewportWidth);
+      const targetScroll = Math.max(0, Math.min(centerPos, maxScroll));
+      laneViewport.scrollLeft = targetScroll;
+      syncWaveScroll(targetScroll);
+      updateScrollControls();
+    });
+
+    fitZoomBtn.addEventListener('click', () => {
+      bestFitZoom();
+    });
+
+    rateSelect.addEventListener('change', (e) => {
+      playbackRate = Number(e.target.value) || 1;
+      if (wave) wave.setPlaybackRate(playbackRate, true);
+    });
+
+    const applyScrollRatio = (ratio) => {
+      const maxScroll = Math.max(0, laneViewport.scrollWidth - laneViewport.clientWidth);
+      const left = Math.min(maxScroll, Math.max(0, ratio * maxScroll));
+      laneViewport.scrollLeft = left;
+      syncWaveScroll(left);
+      updateScrollControls();
+    };
+
+    scrollPos.addEventListener('input', (e) => {
+      const ratio = Number(e.target.value) / 100;
+      applyScrollRatio(ratio);
+    });
+
+    const scrollByStep = (dir) => {
+      const step = laneViewport.clientWidth * SCROLL_STEP_FACTOR;
+      const maxScroll = Math.max(0, laneViewport.scrollWidth - laneViewport.clientWidth);
+      const next = dir === 'left' ? laneViewport.scrollLeft - step : laneViewport.scrollLeft + step;
+      const clamped = Math.min(maxScroll, Math.max(0, next));
+      laneViewport.scrollLeft = clamped;
+      syncWaveScroll(clamped);
+      updateScrollControls();
+    };
+
+    scrollLeftBtn.addEventListener('click', () => scrollByStep('left'));
+    scrollRightBtn.addEventListener('click', () => scrollByStep('right'));
+
+    laneViewport.addEventListener('scroll', () => {
+      // keep slider/buttons in sync when user scrolls via trackpad (if overflow visible)
+      syncWaveScroll(laneViewport.scrollLeft);
+      updateScrollControls();
+    });
+
+    mediaInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) loadMediaFile(file);
+    });
+
+    textInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) loadTextFile(file);
+    });
+
+    resetQueueBtn.addEventListener('click', rebuildQueue);
+    resetSrtBtn.addEventListener('click', resetSubtitles);
+    exportBtn.addEventListener('click', exportSrt);
+    undoBtn.addEventListener('click', undo);
+
+    autoCenterToggle.addEventListener('change', (e) => {
+      autoCenterPlayhead = e.target.checked;
+      setStatus(autoCenterPlayhead ? '已啟用播放頭置中' : '已禁用播放頭置中', 'ok');
+    });
+
+    // 鍵盤快捷鍵
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undo();
+      }
+    });
+
+    // Init with an empty queue
+    rebuildQueue();
+  </script>
+</body>
+</html>
